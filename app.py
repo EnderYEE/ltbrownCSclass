@@ -8,7 +8,7 @@ from groq import Groq
 
 st.set_page_config(
     page_title="My AI Assistant",
-    page_icon="🤖",
+    page_icon="AI",
     layout="centered"
 )
 
@@ -22,10 +22,6 @@ st.markdown(
         .main {
             max-width: 900px;
             margin: auto;
-        }
-
-        .stChatMessage {
-            border-radius: 12px;
         }
 
         h1 {
@@ -47,19 +43,20 @@ st.markdown(
 # ============================================================
 
 st.title("My AI Assistant")
+
 st.markdown(
     '<p class="subtitle">Powered by Groq</p>',
     unsafe_allow_html=True
 )
 
 # ============================================================
-# CHECK API KEY
+# CHECK FOR GROQ API KEY
 # ============================================================
 
 if "GROQ_API_KEY" not in st.secrets:
     st.error(
-        "Groq API key not found. Add GROQ_API_KEY to your "
-        "Streamlit Secrets."
+        "Groq API key not found. "
+        "Please add GROQ_API_KEY to your Streamlit Secrets."
     )
     st.stop()
 
@@ -80,10 +77,8 @@ except Exception as e:
 # ============================================================
 
 with st.sidebar:
-
     st.header("Settings")
 
-    # Model selection
     model = st.selectbox(
         "Choose AI model",
         [
@@ -92,7 +87,6 @@ with st.sidebar:
         ]
     )
 
-    # AI personality
     system_prompt = st.text_area(
         "AI instructions",
         value=(
@@ -106,7 +100,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Clear conversation
     if st.button(
         "Clear conversation",
         use_container_width=True
@@ -120,7 +113,7 @@ with st.sidebar:
     st.caption("Built with Streamlit + Groq")
 
 # ============================================================
-# CHAT MEMORY
+# INITIALIZE CHAT MEMORY
 # ============================================================
 
 if "messages" not in st.session_state:
@@ -131,7 +124,6 @@ if "messages" not in st.session_state:
 # ============================================================
 
 for message in st.session_state.messages:
-
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -139,20 +131,15 @@ for message in st.session_state.messages:
 # USER INPUT
 # ============================================================
 
-prompt = st.chat_input(
-    "Ask me anything..."
-)
+prompt = st.chat_input("Ask me anything...")
 
 if prompt:
 
-    # --------------------------------------------------------
-    # Display user message
-    # --------------------------------------------------------
-
+    # Display user's message
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Save user message
+    # Save user's message
     st.session_state.messages.append(
         {
             "role": "user",
@@ -160,9 +147,9 @@ if prompt:
         }
     )
 
-    # --------------------------------------------------------
-    # Prepare messages for Groq
-    # --------------------------------------------------------
+    # ========================================================
+    # PREPARE MESSAGES FOR GROQ
+    # ========================================================
 
     messages_for_api = [
         {
@@ -175,16 +162,13 @@ if prompt:
         st.session_state.messages
     )
 
-    # --------------------------------------------------------
-    # Get AI response
-    # --------------------------------------------------------
+    # ========================================================
+    # ASK GROQ
+    # ========================================================
 
     with st.chat_message("assistant"):
 
-        message_placeholder = st.empty()
-
         try:
-
             response = client.chat.completions.create(
                 model=model,
                 messages=messages_for_api,
@@ -194,7 +178,7 @@ if prompt:
 
             answer = response.choices[0].message.content
 
-            message_placeholder.markdown(answer)
+            st.markdown(answer)
 
             # Save AI response
             st.session_state.messages.append(
@@ -205,13 +189,8 @@ if prompt:
             )
 
         except Exception as e:
-
-            error_message = (
+            st.error(
                 "Sorry, something went wrong while contacting "
-                f"the AI.\n\nError: `{e}`"
-            )
-
-            message_placeholder.error(
-                error_message
+                f"Groq.\n\nError: {e}"
             )
 ```
