@@ -16,29 +16,33 @@ st.set_page_config(
 # ============================================================
 
 st.title("My AI Assistant")
-st.write("Powered by Groq")
+st.caption("Powered by Groq")
 
 # ============================================================
-# CHECK GROQ API KEY
+# GROQ API KEY
 # ============================================================
 
 if "GROQ_API_KEY" not in st.secrets:
     st.error(
-        "GROQ_API_KEY is missing. "
-        "Please add your Groq API key to Streamlit Secrets."
+        "GROQ_API_KEY is missing from Streamlit Secrets."
+    )
+    st.info(
+        "Open your Streamlit app settings, go to Secrets, "
+        "and add your Groq API key."
     )
     st.stop()
 
+api_key = st.secrets["GROQ_API_KEY"]
+
 # ============================================================
-# CONNECT TO GROQ
+# CREATE GROQ CLIENT
 # ============================================================
 
 try:
-    client = Groq(
-        api_key=st.secrets["GROQ_API_KEY"]
-    )
-except Exception as e:
-    st.error(f"Could not connect to Groq: {e}")
+    client = Groq(api_key=api_key)
+except Exception as error:
+    st.error("Could not connect to Groq.")
+    st.code(str(error))
     st.stop()
 
 # ============================================================
@@ -49,22 +53,24 @@ with st.sidebar:
 
     st.header("Settings")
 
+    # Current Groq production model
     model = st.selectbox(
-        "AI Model",
+        "Choose an AI model",
         [
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant"
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b"
         ]
     )
 
     system_prompt = st.text_area(
         "AI Instructions",
         value=(
-            "You are a helpful, friendly, and knowledgeable AI "
-            "assistant. Give clear and accurate answers. "
-            "Explain difficult topics in a simple way."
+            "You are a helpful, friendly, and knowledgeable "
+            "AI assistant. Give clear and accurate answers. "
+            "Explain difficult topics in simple language "
+            "and use examples when helpful."
         ),
-        height=160
+        height=180
     )
 
     st.divider()
@@ -76,6 +82,11 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
+    st.divider()
+
+    st.caption("AI Assistant")
+    st.caption("Powered by Groq")
+
 # ============================================================
 # CHAT MEMORY
 # ============================================================
@@ -84,7 +95,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # ============================================================
-# DISPLAY CHAT HISTORY
+# DISPLAY PREVIOUS MESSAGES
 # ============================================================
 
 for message in st.session_state.messages:
@@ -103,13 +114,13 @@ prompt = st.chat_input(
 if prompt:
 
     # --------------------------------------------------------
-    # Display user's message
+    # DISPLAY USER MESSAGE
     # --------------------------------------------------------
 
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Save user's message
+    # Save user message
     st.session_state.messages.append(
         {
             "role": "user",
@@ -118,7 +129,7 @@ if prompt:
     )
 
     # --------------------------------------------------------
-    # Prepare messages for Groq
+    # PREPARE MESSAGE HISTORY
     # --------------------------------------------------------
 
     messages_for_api = [
@@ -133,7 +144,7 @@ if prompt:
     )
 
     # --------------------------------------------------------
-    # Ask Groq
+    # SEND REQUEST TO GROQ
     # --------------------------------------------------------
 
     with st.chat_message("assistant"):
@@ -144,7 +155,7 @@ if prompt:
                 model=model,
                 messages=messages_for_api,
                 temperature=0.7,
-                max_tokens=2048
+                max_completion_tokens=2048
             )
 
             answer = response.choices[0].message.content
@@ -159,8 +170,10 @@ if prompt:
                 }
             )
 
-        except Exception as e:
+        except Exception as error:
 
             st.error(
-                f"Groq returned an error:\n\n{e}"
+                "Groq returned an error."
             )
+
+            st.code(str(error))
