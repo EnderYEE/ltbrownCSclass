@@ -1,69 +1,25 @@
-```python
 import streamlit as st
 from groq import Groq
 
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
-
 st.set_page_config(
     page_title="My AI Assistant",
-    page_icon="AI",
+    page_icon="🤖",
     layout="centered"
 )
 
-# ============================================================
-# CUSTOM CSS
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-        .main {
-            max-width: 900px;
-            margin: auto;
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #777;
-            margin-bottom: 30px;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ============================================================
-# TITLE
-# ============================================================
-
 st.title("My AI Assistant")
+st.write("Powered by Groq")
 
-st.markdown(
-    '<p class="subtitle">Powered by Groq</p>',
-    unsafe_allow_html=True
-)
-
-# ============================================================
-# CHECK FOR GROQ API KEY
-# ============================================================
-
+# Get Groq API key from Streamlit Secrets
 if "GROQ_API_KEY" not in st.secrets:
     st.error(
-        "Groq API key not found. "
-        "Please add GROQ_API_KEY to your Streamlit Secrets."
+        "GROQ_API_KEY is missing. "
+        "Go to your Streamlit app settings and add your Groq API key "
+        "under Secrets."
     )
     st.stop()
 
-# ============================================================
-# CREATE GROQ CLIENT
-# ============================================================
-
+# Connect to Groq
 try:
     client = Groq(
         api_key=st.secrets["GROQ_API_KEY"]
@@ -72,15 +28,12 @@ except Exception as e:
     st.error(f"Could not connect to Groq: {e}")
     st.stop()
 
-# ============================================================
-# SIDEBAR
-# ============================================================
-
+# Sidebar
 with st.sidebar:
     st.header("Settings")
 
     model = st.selectbox(
-        "Choose AI model",
+        "AI Model",
         [
             "llama-3.3-70b-versatile",
             "llama-3.1-8b-instant"
@@ -88,58 +41,37 @@ with st.sidebar:
     )
 
     system_prompt = st.text_area(
-        "AI instructions",
+        "AI Instructions",
         value=(
-            "You are a helpful, friendly, and knowledgeable AI "
-            "assistant. Give clear and accurate answers. "
-            "Explain difficult topics in a simple way when "
-            "appropriate."
+            "You are a helpful, friendly, and knowledgeable AI assistant. "
+            "Give clear, accurate, and easy-to-understand answers."
         ),
-        height=180
+        height=150
     )
 
-    st.divider()
-
-    if st.button(
-        "Clear conversation",
-        use_container_width=True
-    ):
+    if st.button("Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-    st.divider()
-
-    st.caption("AI Assistant")
-    st.caption("Built with Streamlit + Groq")
-
-# ============================================================
-# INITIALIZE CHAT MEMORY
-# ============================================================
-
+# Create chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ============================================================
-# DISPLAY PREVIOUS MESSAGES
-# ============================================================
-
+# Display previous messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ============================================================
-# USER INPUT
-# ============================================================
-
+# Chat input
 prompt = st.chat_input("Ask me anything...")
 
 if prompt:
 
-    # Display user's message
+    # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Save user's message
+    # Save user message
     st.session_state.messages.append(
         {
             "role": "user",
@@ -147,31 +79,23 @@ if prompt:
         }
     )
 
-    # ========================================================
-    # PREPARE MESSAGES FOR GROQ
-    # ========================================================
-
-    messages_for_api = [
+    # Prepare messages for Groq
+    messages = [
         {
             "role": "system",
             "content": system_prompt
         }
     ]
 
-    messages_for_api.extend(
-        st.session_state.messages
-    )
+    messages.extend(st.session_state.messages)
 
-    # ========================================================
-    # ASK GROQ
-    # ========================================================
-
+    # Get AI response
     with st.chat_message("assistant"):
 
         try:
             response = client.chat.completions.create(
                 model=model,
-                messages=messages_for_api,
+                messages=messages,
                 temperature=0.7,
                 max_tokens=2048
             )
@@ -190,7 +114,5 @@ if prompt:
 
         except Exception as e:
             st.error(
-                "Sorry, something went wrong while contacting "
-                f"Groq.\n\nError: {e}"
+                f"Groq returned an error: {e}"
             )
-```
